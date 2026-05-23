@@ -1,6 +1,6 @@
 # Testing — MVP Front (Nuxt 3)
 
-Suite de pruebas **End-to-End (E2E)** del frontend usando **Playwright**. Los tests abren un navegador real (Chromium headless), interactúan con la interfaz y verifican el comportamiento desde el punto de vista del usuario.
+Suite de pruebas **End-to-End (E2E)** del frontend usando **Playwright**. Los tests abren un navegador real (Chromium), interactúan con la interfaz y verifican el comportamiento desde el punto de vista del usuario.
 
 ---
 
@@ -12,7 +12,7 @@ Suite de pruebas **End-to-End (E2E)** del frontend usando **Playwright**. Los te
 bun install
 ```
 
-`@playwright/test` está en `devDependencies`. Si es la primera vez que se instala, también hay que bajar los navegadores:
+`@playwright/test` está en `devDependencies`. Si es la primera vez, hay que bajar los navegadores:
 
 ```bash
 npx playwright install chromium
@@ -34,6 +34,16 @@ Arranque rápido con ambos a la vez:
 ./dev.sh
 ```
 
+### Estado limpio antes de correr
+
+Si la base de datos tiene usuarios bloqueados o se llegó al rate limit de registro, resetear el estado antes de ejecutar los tests:
+
+```bash
+# Desde MVP/back/
+rm app.db          # borra todos los usuarios
+# el back recrea la BD al reiniciar
+```
+
 ---
 
 ## Estructura
@@ -43,30 +53,26 @@ front/
 ├── playwright.config.js         ← configuración de Playwright
 └── tests/e2e/
     ├── helpers.js               ← funciones compartidas (apiRegister, goToLogin, etc.)
-    ├── login.spec.js            ← 11 tests — flujo de login
-    └── register.spec.js         ← 7 tests — flujo de registro
+    ├── login.spec.js            ← 3 tests — flujo de login
+    └── register.spec.js         ← 2 tests — flujo de registro
 ```
 
 ---
 
 ## Comandos
 
-### Correr todos los tests (headless)
-
-```bash
-bun run test:e2e
-```
-
-### Con el navegador visible (para ver qué hace el test)
+### Con el navegador visible — modo demo
 
 ```bash
 bun run test:e2e:headed
 ```
 
-### Con la interfaz gráfica de Playwright
+Abre Chromium con `slowMo: 1500 ms` entre cada acción para ver cada paso claramente.
+
+### Headless (sin ventana)
 
 ```bash
-bun run test:e2e:ui
+bun run test:e2e
 ```
 
 ### Correr un archivo específico
@@ -74,18 +80,6 @@ bun run test:e2e:ui
 ```bash
 npx playwright test login.spec.js
 npx playwright test register.spec.js
-```
-
-### Correr un test específico por nombre
-
-```bash
-npx playwright test -g "redirige a / con credenciales válidas"
-```
-
-### Ver el reporte HTML tras la ejecución
-
-```bash
-npx playwright show-report
 ```
 
 ---
@@ -96,98 +90,53 @@ npx playwright show-report
 |--------|-------|-------------|
 | `testDir` | `./tests/e2e` | Carpeta de los tests |
 | `baseURL` | `http://localhost:3000` | URL base del front |
-| `timeout` | 15 000 ms | Tiempo máximo por test |
-| `expect.timeout` | 6 000 ms | Tiempo máximo por aserción |
-| `headless` | `true` | Sin ventana visible (cambiar a `false` para debug) |
+| `timeout` | 30 000 ms | Tiempo máximo por test |
+| `expect.timeout` | 8 000 ms | Tiempo máximo por aserción |
+| `headless` | `false` | Navegador visible |
+| `slowMo` | `1 500 ms` | Pausa entre cada acción |
+| `workers` | `1` | Un test a la vez (evita conflictos con la BD y el rate limiter) |
 | `video` | `retain-on-failure` | Graba video solo si el test falla |
 | `screenshot` | `only-on-failure` | Captura solo si el test falla |
-| `fullyParallel` | `false` | Tests secuenciales (evita conflictos en la BD compartida) |
 
 ---
 
 ## Helpers (`tests/e2e/helpers.js`)
 
-Funciones utilitarias usadas por todos los specs:
-
 | Función | Descripción |
 |---------|-------------|
-| `apiRegister(email, password, name)` | Registra un usuario directo contra la API (sin pasar por el front). Se usa en `beforeAll`/`beforeEach` para preparar estado. |
+| `apiRegister(email, password, name)` | Registra un usuario directo contra la API (sin el front). Acepta 201 (creado) o 400 (ya existe). Usado en `beforeAll` para preparar estado. |
 | `uniqueSuffix()` | Genera un sufijo aleatorio de 6 caracteres para evitar colisiones de email entre ejecuciones. |
-| `goToLogin(page)` | Navega a `/login` y espera a que `#form-login` sea visible. |
-| `goToRegister(page)` | Navega a `/login`, hace clic en el tab registro y espera `#form-register`. |
+| `goToLogin(page)` | Navega a `/login` con `waitUntil: 'load'` y espera a que Vue hidrate antes de retornar. |
+| `goToRegister(page)` | Navega a `/login`, espera hidratación, y hace clic en el tab "Regístrate". |
+
+> **Por qué `waitUntil: 'load'`**: Nuxt 3 sirve el HTML inicial por SSR antes de que Vue hidrate en el cliente. Sin esta espera, Playwright puede intentar hacer clic en botones cuyo handler `@click` todavía no está conectado.
 
 ---
 
-## Tests de login (`login.spec.js`) — 11 tests
+## Tests de login (`login.spec.js`) — 3 tests
 
-Un usuario de prueba se registra una vez vía `beforeAll` y se reutiliza en todos los tests del archivo. Los tests de bloqueo usan un usuario fresco creado en `beforeEach`.
-
-### Página de login (3 tests)
+Un usuario de prueba se registra vía API en `beforeAll` y se reutiliza en los tres tests.
 
 | Test | Qué verifica |
 |------|-------------|
-| `muestra el formulario de login al cargar` | `#form-login`, `#login-email`, `#login-password` y `#btn-login` son visibles |
-| `el tab de registro muestra el formulario de registro` | Clic en `#tab-register` → `#form-register` visible, `#form-login` oculto |
-| `volver al tab de login oculta el registro` | Clic en `#tab-login` → vuelve al estado inicial |
-
-### Login exitoso (2 tests)
-
-| Test | Qué verifica |
-|------|-------------|
-| `redirige a / con credenciales válidas` | Tras login correcto, `page.url()` es `http://localhost:3000/` |
-| `guarda el token en localStorage tras login exitoso` | `localStorage.getItem('auth_token')` no es `null` y tiene más de 20 caracteres |
-
-### Login fallido (4 tests)
-
-| Test | Qué verifica |
-|------|-------------|
-| `muestra error con password incorrecto` | `#login-error` se vuelve visible |
-| `el mensaje de error menciona intentos restantes` | El texto de `#login-error` contiene `attempt` o `incorrect` |
-| `campos vacíos no muestran error del servidor` | Sin llenar campos, `#login-error` permanece oculto (validación frontend) |
-| `email con formato inválido no llama a la API` | Email sin `@` no dispara llamada al back, `#login-error` permanece oculto |
-
-### Bloqueo de cuenta (2 tests)
-
-Cada test crea su propio usuario fresco para no afectar al usuario compartido.
-
-| Test | Qué verifica |
-|------|-------------|
-| `3 intentos fallidos muestran mensaje de bloqueo` | Tras 3 intentos fallidos, `#login-error` contiene `locked` o `minute` |
-| `cuenta bloqueada rechaza incluso el password correcto` | Mientras la cuenta está bloqueada, incluso con credenciales correctas aparece el mensaje de bloqueo |
+| `muestra el formulario de login` | `#form-login`, `#login-email`, `#login-password` y `#btn-login` son visibles al cargar |
+| `login exitoso redirige a /` | Con credenciales válidas, la URL cambia a `http://localhost:3000/` |
+| `login fallido muestra mensaje de error` | Con password incorrecto, `#login-error` se vuelve visible |
 
 ---
 
-## Tests de registro (`register.spec.js`) — 7 tests
-
-Un usuario existente se registra vía `beforeAll` para probar el caso de email duplicado.
-
-### Formulario de registro (3 tests)
+## Tests de registro (`register.spec.js`) — 2 tests
 
 | Test | Qué verifica |
 |------|-------------|
-| `el tab registro muestra el formulario` | `#reg-name`, `#reg-email`, `#btn-register` son visibles tras cambiar de tab |
-| `campos vacíos no envían el formulario` | Sin llenar nada, la URL sigue siendo `/login` (validación frontend) |
-| `passwords que no coinciden no envían el formulario` | Con contraseñas distintas, la URL sigue siendo `/login` |
-
-### Registro exitoso (2 tests)
-
-| Test | Qué verifica |
-|------|-------------|
-| `muestra diálogo de confirmación` | Tras registro correcto, aparece el texto "Registro exitoso" en un diálogo |
-| `el botón Entendido cierra el diálogo y vuelve al login` | Clic en "Entendido" → `#form-login` es visible |
-
-### Registro fallido (2 tests)
-
-| Test | Qué verifica |
-|------|-------------|
-| `email duplicado muestra error en toast` | Registrar un email ya existente muestra un `[role="alert"]` (PrimeVue Toast) |
-| `password menor a 6 caracteres no pasa validación frontend` | Con password corto, la URL sigue siendo `/login` |
+| `muestra el formulario de registro` | Tras clic en tab "Regístrate", aparecen `#reg-name`, `#reg-email`, `#reg-password`, `#reg-confirm` y `#btn-register` |
+| `registro exitoso muestra diálogo de confirmación` | Llenar el formulario con datos válidos y enviar muestra el texto "Registro exitoso" |
 
 ---
 
 ## Selectores usados
 
-Los tests interactúan con el DOM a través de estos identificadores definidos en `login.vue`:
+Los tests interactúan con el DOM a través de estos IDs definidos en `login.vue`:
 
 | Selector | Elemento |
 |----------|---------|
@@ -204,12 +153,11 @@ Los tests interactúan con el DOM a través de estos identificadores definidos e
 | `#reg-password` | Input password del registro (PrimeVue `<Password>`) |
 | `#reg-confirm` | Input confirmar password |
 | `#btn-register` | Botón "Crear cuenta" |
-| `[role="alert"]` | Toast de PrimeVue (errores de registro) |
 
 ---
 
 ## Notas
 
-- Los tests son **secuenciales** (`fullyParallel: false`) para evitar que múltiples instancias del navegador saturen el rate limiter del back (10 req/min en `/auth/login`).
-- Cada test de bloqueo usa un usuario único generado con `uniqueSuffix()` para no contaminar el estado de otros tests.
-- Los videos y capturas de pantalla de los tests fallidos se guardan en `test-results/`.
+- **Un worker**: `workers: 1` garantiza que los tests corran de a uno para no saturar el rate limiter del back ni generar condiciones de carrera en la BD.
+- **Estado limpio**: El `beforeAll` de login registra un usuario con email aleatorio; si la BD fue reseteada antes de correr, siempre se crea desde cero.
+- Los videos y capturas de los tests fallidos se guardan en `test-results/`.
