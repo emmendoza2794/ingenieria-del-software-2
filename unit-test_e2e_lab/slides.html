@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pruebas de Software — Semanas 13, 14 & 15</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #252836;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --accent3: #10b981;
+      --accent4: #f59e0b;
+      --danger: #ef4444;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #2d3149;
+      --code-bg: #0d1117;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── DECK ── */
+    #deck { width: 100%; height: 100vh; position: relative; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 3rem 4rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      transform: translateX(40px);
+    }
+    .slide.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateX(0);
+    }
+    .slide.exit {
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+
+    /* ── LAYOUT HELPERS ── */
+    .slide-inner { width: 100%; max-width: 1100px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+
+    /* ── TYPOGRAPHY ── */
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .tag.purple { background: #3b1a6e; color: #c084fc; }
+    .tag.cyan   { background: #0a3040; color: #67e8f9; }
+    .tag.green  { background: #052e16; color: #6ee7b7; }
+    .tag.amber  { background: #3d1d00; color: #fcd34d; }
+    .tag.red    { background: #3b0a0a; color: #fca5a5; }
+
+    h1 { font-size: 3.2rem; font-weight: 800; line-height: 1.1; }
+    h2 { font-size: 2rem;   font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text); }
+    p, li { font-size: 1.05rem; line-height: 1.7; color: var(--text-muted); }
+    ul { list-style: none; }
+    ul li::before { content: "→ "; color: var(--accent2); font-weight: 700; }
+
+    .hero-sub { font-size: 1.25rem; color: var(--text-muted); margin-top: 1rem; max-width: 620px; line-height: 1.6; }
+    .hero-meta { margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .badge {
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      height: 100%;
+    }
+    .card.accent-purple { border-top: 3px solid var(--accent); }
+    .card.accent-cyan   { border-top: 3px solid var(--accent2); }
+    .card.accent-green  { border-top: 3px solid var(--accent3); }
+    .card.accent-amber  { border-top: 3px solid var(--accent4); }
+    .card.accent-red    { border-top: 3px solid var(--danger); }
+
+    .card-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+    .card ul li { font-size: 0.95rem; }
+
+    /* ── CODE BLOCKS ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.65;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace; }
+    .kw  { color: #c678dd; }
+    .fn  { color: #61afef; }
+    .st  { color: #98c379; }
+    .cm  { color: #5c6370; font-style: italic; }
+    .de  { color: #e5c07b; }
+    .num { color: #d19a66; }
+    .ty  { color: #56b6c2; }
+
+    /* ── PYRAMID ── */
+    .pyramid { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; width: 100%; }
+    .pyr-level {
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; font-weight: 700; font-size: 0.9rem;
+      padding: 0.6rem 1rem; color: #fff; transition: transform 0.2s;
+      cursor: default;
+    }
+    .pyr-level:hover { transform: scaleX(1.03); }
+
+    /* ── COMPARISON TABLE ── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: var(--surface2); padding: 0.75rem 1rem; text-align: left; color: var(--accent2); font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-muted); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .dot.green { background: var(--accent3); }
+    .dot.amber { background: var(--accent4); }
+    .dot.red   { background: var(--danger); }
+
+    /* ── FLOW DIAGRAM ── */
+    .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .flow-step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: center;
+      min-width: 110px;
+    }
+    .flow-arrow { color: var(--accent2); font-size: 1.4rem; font-weight: 700; }
+
+    /* ── HIGHLIGHT BOX ── */
+    .highlight {
+      background: linear-gradient(135deg, #1a0a3d, #0a2040);
+      border: 1px solid #3b1a6e;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-top: 1rem;
+    }
+    .highlight p { color: #c4b5fd; }
+
+    /* ── CHECKLIST ── */
+    .checklist li::before { content: "✓ "; color: var(--accent3); }
+    .crosslist li::before { content: "✗ "; color: var(--danger); }
+
+    /* ── AGENDA SLIDE ── */
+    .agenda-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .agenda-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .agenda-num {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--border);
+      min-width: 2rem;
+      line-height: 1;
+    }
+    .agenda-item:hover .agenda-num { color: var(--accent); }
+    .agenda-title { font-weight: 600; font-size: 0.95rem; color: var(--text); }
+    .agenda-sub   { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    /* ── QUIZ ── */
+    .quiz-q { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.5rem; }
+    .quiz-opt {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1.25rem;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .quiz-opt:hover { border-color: var(--accent2); background: var(--surface2); }
+    .quiz-opt.correct { border-color: var(--accent3); background: #052e16; color: #6ee7b7; }
+    .quiz-opt.wrong   { border-color: var(--danger);  background: #3b0a0a; color: #fca5a5; }
+
+    /* ── TIMELINE ── */
+    .timeline { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+    .tl-item { display: flex; gap: 1.25rem; align-items: flex-start; }
+    .tl-dot {
+      width: 14px; height: 14px; border-radius: 50%; margin-top: 5px;
+      flex-shrink: 0; border: 2px solid transparent;
+    }
+    .tl-line { display: flex; flex-direction: column; align-items: center; }
+    .tl-connector { width: 2px; background: var(--border); flex: 1; min-height: 20px; }
+
+    /* ── NAV ── */
+    #nav {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.6rem 1.2rem;
+      z-index: 100;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    #nav button {
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    #nav button:hover { background: var(--surface2); }
+    #nav button:disabled { color: var(--border); cursor: default; }
+    #slide-counter { font-size: 0.8rem; color: var(--text-muted); min-width: 50px; text-align: center; }
+
+    #progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.3s ease;
+      z-index: 200;
+    }
+
+    /* ── TITLE SLIDE ── */
+    .title-slide { background: radial-gradient(ellipse at 30% 40%, #1a0a4e 0%, var(--bg) 60%); }
+    .title-slide h1 { background: linear-gradient(135deg, #fff 30%, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    /* ── SECTION BREAK ── */
+    .section-slide {
+      background: radial-gradient(ellipse at 60% 50%, #0a2040 0%, var(--bg) 70%);
+      text-align: center;
+    }
+    .section-slide h2 { font-size: 2.8rem; }
+    .section-num { font-size: 6rem; font-weight: 900; color: var(--border); line-height: 1; margin-bottom: 0.5rem; }
+
+    /* ── LAB SLIDE ── */
+    .lab-slide { background: radial-gradient(ellipse at 50% 60%, #052e16 0%, var(--bg) 70%); }
+
+    @media (max-width: 768px) {
+      .slide { padding: 2rem 1.5rem; }
+      h1 { font-size: 2.2rem; }
+      h2 { font-size: 1.5rem; }
+      .two-col, .three-col, .agenda-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div id="deck">
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 1 — PORTADA
+  ════════════════════════════════════════════ -->
+  <div class="slide title-slide active">
+    <div class="slide-inner">
+      <div class="tag purple">Semanas 13, 14 & 15 · Ingeniería del Software II</div>
+      <h1>Pruebas de<br>Software</h1>
+      <p class="hero-sub">
+        De las pruebas unitarias hasta las pruebas de carga:
+        construcción de software confiable y performante con <strong>FastAPI</strong> y <strong>HTML puro</strong>.
+      </p>
+      <div class="hero-meta">
+        <span class="badge">🐍 Python / FastAPI</span>
+        <span class="badge">🌐 HTML + Fetch API</span>
+        <span class="badge">✅ pytest · httpx</span>
+        <span class="badge">🎭 Playwright</span>
+        <span class="badge">🔥 K6</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 2 — AGENDA
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag cyan">Contenido</div>
+      <h2>¿Qué veremos hoy?</h2>
+      <div class="agenda-grid">
+        <div class="agenda-item">
+          <span class="agenda-num">01</span>
+          <div>
+            <div class="agenda-title">¿Por qué probar?</div>
+            <div class="agenda-sub">Costo del bug, confianza, deuda técnica</div>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <span class="agenda-num">02</span>
+          <div>
+            <div class="agenda-title">La Pirámide de Pruebas</div>
+            <div class="agenda-sub">Unitarias · Integración · E2E</div>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <span class="agenda-num">03</span>
+          <div>
+            <div class="agenda-title">Pruebas Unitarias</div>
+            <div class="agenda-sub">pytest, fixtures, mocking, cobertura</div>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <span class="agenda-num">04</span>
+          <div>
+            <div class="agenda-title">Pruebas de Integración</div>
+            <div class="agenda-sub">TestClient de FastAPI, base de datos, httpx</div>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <span class="agenda-num">05</span>
+          <div>
+            <div class="agenda-title">Pruebas E2E</div>
+            <div class="agenda-sub">Playwright con HTML puro, flujos de usuario</div>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <span class="agenda-num">06</span>
+          <div>
+            <div class="agenda-title">Calidad y Pruebas de Carga</div>
+            <div class="agenda-sub">ISO 25010, K6, stages, thresholds y reporte</div>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <span class="agenda-num">07</span>
+          <div>
+            <div class="agenda-title">Laboratorio práctico</div>
+            <div class="agenda-sub">Cuatro labs progresivos con el stack real</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 3 — ¿POR QUÉ PROBAR?
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner two-col">
+      <div>
+        <div class="tag red">El problema</div>
+        <h2>Un bug detectado tarde cuesta 100×</h2>
+        <p style="margin:1rem 0">El costo de corregir un error crece exponencialmente según la fase donde se detecta.</p>
+        <table>
+          <tr><th>Fase de detección</th><th>Costo relativo</th></tr>
+          <tr><td>Diseño / código</td><td style="color:var(--accent3)">× 1</td></tr>
+          <tr><td>Pruebas internas</td><td style="color:var(--accent4)">× 5</td></tr>
+          <tr><td>QA / staging</td><td style="color:var(--accent4)">× 15</td></tr>
+          <tr><td>Producción</td><td style="color:var(--danger)">× 30–100</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="tag green">Los beneficios</div>
+        <h2>¿Qué ganas probando?</h2>
+        <ul style="margin-top:1rem" class="checklist">
+          <li>Refactorizar sin miedo</li>
+          <li>Documentación viva del comportamiento</li>
+          <li>Integración continua confiable</li>
+          <li>Colaboración en equipo sin "romper" lo ajeno</li>
+          <li>Menos depuración, más construcción</li>
+          <li>Confianza al desplegar en producción</li>
+        </ul>
+        <div class="highlight">
+          <p>"El código sin pruebas es código heredado desde el momento en que se escribe." — Michael Feathers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 4 — PIRÁMIDE
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag purple">Estrategia</div>
+      <h2>La Pirámide de Pruebas</h2>
+      <div class="two-col" style="margin-top:1.5rem; align-items:center">
+        <div class="pyramid">
+          <div class="pyr-level" style="width:45%; background:#ef444422; border:1px solid #ef4444; color:#fca5a5">
+            E2E / UI
+          </div>
+          <div class="pyr-level" style="width:65%; background:#f59e0b22; border:1px solid #f59e0b; color:#fcd34d">
+            Integración
+          </div>
+          <div class="pyr-level" style="width:85%; background:#10b98122; border:1px solid #10b981; color:#6ee7b7">
+            Unitarias (base sólida)
+          </div>
+          <div style="margin-top:0.5rem; font-size:0.75rem; color:var(--text-muted); text-align:center">
+            ← más baratas · más rápidas · más aisladas →
+          </div>
+        </div>
+        <div>
+          <table>
+            <tr><th>Tipo</th><th>Velocidad</th><th>Costo</th><th>Herramienta</th></tr>
+            <tr>
+              <td><span class="dot green"></span>Unitaria</td>
+              <td style="color:var(--accent3)">ms</td>
+              <td style="color:var(--accent3)">Bajo</td>
+              <td>pytest</td>
+            </tr>
+            <tr>
+              <td><span class="dot amber"></span>Integración</td>
+              <td style="color:var(--accent4)">~1s</td>
+              <td style="color:var(--accent4)">Medio</td>
+              <td>pytest + httpx</td>
+            </tr>
+            <tr>
+              <td><span class="dot red"></span>E2E</td>
+              <td style="color:var(--danger)">~30s</td>
+              <td style="color:var(--danger)">Alto</td>
+              <td>Playwright</td>
+            </tr>
+          </table>
+          <div class="highlight" style="margin-top:1rem">
+            <p><strong style="color:#c4b5fd">Regla práctica:</strong> 70% unitarias · 20% integración · 10% E2E</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 5 — SECCIÓN UNITARIAS
+  ════════════════════════════════════════════ -->
+  <div class="slide section-slide">
+    <div class="slide-inner" style="text-align:center">
+      <div class="section-num">01</div>
+      <div class="tag green">Semana 13</div>
+      <h2>Pruebas Unitarias</h2>
+      <p style="margin-top:1rem; font-size:1.1rem; color:var(--text-muted)">
+        Probar la unidad más pequeña de código de forma completamente aislada.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 6 — ANATOMÍA DE UNA PRUEBA
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag green">Patrón AAA</div>
+      <h2>Arrange · Act · Assert</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="cm"># lab_01/services/calculadora.py</span>
+
+<span class="kw">def</span> <span class="fn">calcular_precio_final</span>(precio: <span class="ty">float</span>, descuento: <span class="ty">float</span>) -> <span class="ty">float</span>:
+    <span class="kw">if</span> <span class="kw">not</span> <span class="num">0</span> <= descuento <= <span class="num">100</span>:
+        <span class="kw">raise</span> <span class="ty">ValueError</span>(<span class="st">"Descuento fuera de rango"</span>)
+    <span class="kw">return</span> precio * (<span class="num">1</span> - descuento / <span class="num">100</span>)</code></pre>
+          <pre style="margin-top:1rem"><code><span class="cm"># lab_01/tests/test_calculadora.py</span>
+
+<span class="kw">def</span> <span class="fn">test_descuento_valido</span>():
+    <span class="cm"># Arrange</span>
+    precio    = <span class="num">100.0</span>
+    descuento = <span class="num">20</span>
+
+    <span class="cm"># Act</span>
+    resultado = <span class="fn">calcular_precio_final</span>(precio, descuento)
+
+    <span class="cm"># Assert</span>
+    <span class="kw">assert</span> resultado == <span class="num">80.0</span>
+
+<span class="kw">def</span> <span class="fn">test_descuento_invalido_lanza_error</span>():
+    <span class="kw">import</span> pytest
+    <span class="kw">with</span> pytest.<span class="fn">raises</span>(<span class="ty">ValueError</span>):
+        <span class="fn">calcular_precio_final</span>(<span class="num">100</span>, <span class="num">150</span>)</code></pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:1rem">Las 3 A del patrón</h3>
+          <div class="card accent-green" style="margin-bottom:1rem">
+            <div class="card-icon">📐</div>
+            <h3>Arrange</h3>
+            <p>Preparar el estado inicial: datos de entrada, objetos, dependencias.</p>
+          </div>
+          <div class="card accent-cyan" style="margin-bottom:1rem">
+            <div class="card-icon">▶️</div>
+            <h3>Act</h3>
+            <p>Ejecutar la unidad bajo prueba con los datos preparados.</p>
+          </div>
+          <div class="card accent-purple">
+            <div class="card-icon">✅</div>
+            <h3>Assert</h3>
+            <p>Verificar que el resultado es el esperado.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 7 — FIXTURES
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag green">pytest</div>
+      <h2>Fixtures: estado reutilizable</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="cm"># conftest.py — disponible en todo el proyecto</span>
+
+<span class="kw">import</span> pytest
+
+<span class="de">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">usuario_base</span>():
+    <span class="kw">return</span> {
+        <span class="st">"id"</span>: <span class="num">1</span>,
+        <span class="st">"nombre"</span>: <span class="st">"Ana García"</span>,
+        <span class="st">"email"</span>: <span class="st">"ana@ejemplo.com"</span>,
+        <span class="st">"activo"</span>: <span class="kw">True</span>,
+    }
+
+<span class="de">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">db_en_memoria</span>():
+    <span class="cm"># Se ejecuta antes de cada test</span>
+    db = <span class="fn">crear_db_temporal</span>()
+    db.<span class="fn">poblar_datos_base</span>()
+    <span class="kw">yield</span> db         <span class="cm"># ← el test recibe esto</span>
+    db.<span class="fn">limpiar</span>()     <span class="cm"># teardown automático</span>
+
+<span class="cm"># Usando la fixture</span>
+<span class="kw">def</span> <span class="fn">test_usuario_activo</span>(usuario_base):
+    <span class="kw">assert</span> usuario_base[<span class="st">"activo"</span>] <span class="kw">is True</span></code></pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:1rem">Ámbitos de fixture</h3>
+          <table>
+            <tr><th>Scope</th><th>Cuándo se crea</th></tr>
+            <tr><td><code>function</code></td><td>Cada test (por defecto)</td></tr>
+            <tr><td><code>class</code></td><td>Por clase de tests</td></tr>
+            <tr><td><code>module</code></td><td>Por archivo .py</td></tr>
+            <tr><td><code>session</code></td><td>Una vez por ejecución</td></tr>
+          </table>
+          <div class="highlight" style="margin-top:1rem">
+            <p>Las fixtures evitan el código duplicado (DRY) y garantizan que cada test comience con un estado conocido.</p>
+          </div>
+          <pre style="margin-top:1rem"><code><span class="cm"># Ejecutar pruebas</span>
+pytest -v
+pytest --cov=app --cov-report=html
+pytest -k <span class="st">"test_usuario"</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 8 — MOCKING
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag amber">Aislamiento</div>
+      <h2>Mocking: reemplazar dependencias</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="kw">from</span> unittest.mock <span class="kw">import</span> patch, MagicMock
+<span class="kw">import</span> pytest
+
+<span class="cm"># Servicio que depende de un cliente externo</span>
+<span class="kw">class</span> <span class="ty">NotificadorEmail</span>:
+    <span class="kw">def</span> <span class="fn">enviar</span>(<span class="kw">self</span>, destinatario, mensaje):
+        <span class="cm"># ...llama a SendGrid, AWS SES, etc.</span>
+        <span class="kw">pass</span>
+
+<span class="kw">class</span> <span class="ty">ServicioRegistro</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, notificador: <span class="ty">NotificadorEmail</span>):
+        <span class="kw">self</span>.notificador = notificador
+
+    <span class="kw">def</span> <span class="fn">registrar_usuario</span>(<span class="kw">self</span>, email):
+        <span class="cm"># lógica de negocio...</span>
+        <span class="kw">self</span>.notificador.<span class="fn">enviar</span>(email, <span class="st">"Bienvenido"</span>)
+        <span class="kw">return</span> {<span class="st">"ok"</span>: <span class="kw">True</span>}
+
+<span class="cm"># ✅ Test SIN llamar al email real</span>
+<span class="kw">def</span> <span class="fn">test_registrar_envia_email</span>():
+    mock_notif = <span class="fn">MagicMock</span>()
+    servicio   = <span class="ty">ServicioRegistro</span>(mock_notif)
+
+    resultado  = servicio.<span class="fn">registrar_usuario</span>(<span class="st">"x@x.com"</span>)
+
+    mock_notif.enviar.<span class="fn">assert_called_once_with</span>(
+        <span class="st">"x@x.com"</span>, <span class="st">"Bienvenido"</span>
+    )
+    <span class="kw">assert</span> resultado[<span class="st">"ok"</span>] <span class="kw">is True</span></code></pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:1rem">¿Cuándo mockear?</h3>
+          <ul class="checklist" style="margin-bottom:1.5rem">
+            <li>Servicios de email / SMS</li>
+            <li>APIs externas (Stripe, Google)</li>
+            <li>Base de datos (en pruebas unitarias)</li>
+            <li>Fecha y hora actual (<code>datetime.now()</code>)</li>
+            <li>Generación de IDs aleatorios</li>
+          </ul>
+          <h3 style="margin-bottom:1rem">¿Cuándo NO mockear?</h3>
+          <ul class="crosslist">
+            <li>Tu propia lógica de negocio</li>
+            <li>En pruebas de integración (usa la DB real)</li>
+            <li>Cuando el mock se vuelve más complejo que la dependencia</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 9 — COBERTURA
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag purple">Métricas</div>
+      <h2>Cobertura de código</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="cm"># Instalar</span>
+pip install pytest-cov
+
+<span class="cm"># Ejecutar con reporte de cobertura</span>
+pytest --cov=app --cov-report=term-missing
+
+<span class="cm"># Salida de ejemplo:</span>
+<span class="st">---------- coverage: Python 3.12 ----------
+Name                    Stmts   Miss  Cover
+-------------------------------------------
+app/main.py                12      0   100%
+app/services/items.py      28      4    86%
+app/services/users.py      35      9    74%
+-------------------------------------------
+TOTAL                      75     13    83%</span>
+
+<span class="cm"># Reporte HTML (más detallado)</span>
+pytest --cov=app --cov-report=html
+<span class="cm"># → abre htmlcov/index.html</span></code></pre>
+        </div>
+        <div>
+          <div class="card accent-green" style="margin-bottom:1rem">
+            <h3>¿Qué mide?</h3>
+            <p>Qué porcentaje de líneas del código de producción fue ejecutado durante las pruebas.</p>
+          </div>
+          <div class="card accent-amber" style="margin-bottom:1rem">
+            <h3>Objetivo razonable</h3>
+            <p>Entre <strong style="color:var(--accent4)">70% y 85%</strong>. El 100% no garantiza calidad, solo que cada línea se ejecutó alguna vez.</p>
+          </div>
+          <div class="card accent-red">
+            <h3>Trampa común</h3>
+            <p>Cobertura alta con asserts débiles. Una prueba puede ejecutar código sin verificar nada útil.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 10 — SECCIÓN INTEGRACIÓN
+  ════════════════════════════════════════════ -->
+  <div class="slide section-slide">
+    <div class="slide-inner" style="text-align:center">
+      <div class="section-num">02</div>
+      <div class="tag amber">Semana 13-14</div>
+      <h2>Pruebas de Integración</h2>
+      <p style="margin-top:1rem; font-size:1.1rem; color:var(--text-muted)">
+        Verificar que los módulos del sistema funcionan correctamente <em>juntos</em>.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 11 — FASTAPI TESTCLIENT
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag amber">FastAPI</div>
+      <h2>TestClient: probar la API completa</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="cm"># app/main.py</span>
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+
+app = <span class="fn">FastAPI</span>()
+items_db = {}
+
+<span class="kw">class</span> <span class="ty">Item</span>(<span class="ty">BaseModel</span>):
+    nombre: <span class="ty">str</span>
+    precio: <span class="ty">float</span>
+
+<span class="de">@app.post</span>(<span class="st">"/items/"</span>, status_code=<span class="num">201</span>)
+<span class="kw">def</span> <span class="fn">crear_item</span>(item: <span class="ty">Item</span>):
+    items_db[item.nombre] = item
+    <span class="kw">return</span> item
+
+<span class="de">@app.get</span>(<span class="st">"/items/{nombre}"</span>)
+<span class="kw">def</span> <span class="fn">obtener_item</span>(nombre: <span class="ty">str</span>):
+    <span class="kw">if</span> nombre <span class="kw">not in</span> items_db:
+        <span class="kw">raise</span> <span class="ty">HTTPException</span>(<span class="num">404</span>)
+    <span class="kw">return</span> items_db[nombre]</code></pre>
+        </div>
+        <div>
+          <pre><code><span class="cm"># tests/test_items.py</span>
+<span class="kw">from</span> fastapi.testclient <span class="kw">import</span> TestClient
+<span class="kw">from</span> app.main <span class="kw">import</span> app
+
+client = <span class="fn">TestClient</span>(app)
+
+<span class="kw">def</span> <span class="fn">test_crear_item</span>():
+    resp = client.<span class="fn">post</span>(<span class="st">"/items/"</span>, json={
+        <span class="st">"nombre"</span>: <span class="st">"Mango"</span>,
+        <span class="st">"precio"</span>: <span class="num">2.5</span>
+    })
+    <span class="kw">assert</span> resp.status_code == <span class="num">201</span>
+    <span class="kw">assert</span> resp.json()[<span class="st">"nombre"</span>] == <span class="st">"Mango"</span>
+
+<span class="kw">def</span> <span class="fn">test_item_no_existe</span>():
+    resp = client.<span class="fn">get</span>(<span class="st">"/items/inexistente"</span>)
+    <span class="kw">assert</span> resp.status_code == <span class="num">404</span>
+
+<span class="kw">def</span> <span class="fn">test_crear_y_obtener</span>():
+    client.<span class="fn">post</span>(<span class="st">"/items/"</span>, json={
+        <span class="st">"nombre"</span>: <span class="st">"Papaya"</span>, <span class="st">"precio"</span>: <span class="num">3.0</span>
+    })
+    resp = client.<span class="fn">get</span>(<span class="st">"/items/Papaya"</span>)
+    <span class="kw">assert</span> resp.json()[<span class="st">"precio"</span>] == <span class="num">3.0</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 12 — BASE DE DATOS EN TESTS
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag amber">Integración con BD</div>
+      <h2>Base de datos de prueba con SQLite</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="cm"># conftest.py</span>
+<span class="kw">import</span> pytest
+<span class="kw">from</span> sqlalchemy <span class="kw">import</span> create_engine
+<span class="kw">from</span> sqlalchemy.orm <span class="kw">import</span> sessionmaker
+<span class="kw">from</span> fastapi.testclient <span class="kw">import</span> TestClient
+<span class="kw">from</span> app.main <span class="kw">import</span> app, get_db
+<span class="kw">from</span> app.database <span class="kw">import</span> Base
+
+<span class="cm"># BD temporal en memoria</span>
+TEST_URL = <span class="st">"sqlite:///./test.db"</span>
+engine   = <span class="fn">create_engine</span>(TEST_URL)
+Session  = <span class="fn">sessionmaker</span>(bind=engine)
+
+<span class="de">@pytest.fixture</span>(scope=<span class="st">"function"</span>)
+<span class="kw">def</span> <span class="fn">db_test</span>():
+    Base.metadata.<span class="fn">create_all</span>(engine)
+    session = <span class="fn">Session</span>()
+    <span class="kw">yield</span> session
+    session.<span class="fn">close</span>()
+    Base.metadata.<span class="fn">drop_all</span>(engine)
+
+<span class="de">@pytest.fixture</span>
+<span class="kw">def</span> <span class="fn">client_test</span>(db_test):
+    <span class="kw">def</span> <span class="fn">override_get_db</span>():
+        <span class="kw">yield</span> db_test
+    app.dependency_overrides[get_db] = <span class="fn">override_get_db</span>
+    <span class="kw">with</span> <span class="fn">TestClient</span>(app) <span class="kw">as</span> c:
+        <span class="kw">yield</span> c
+    app.dependency_overrides.<span class="fn">clear</span>()</code></pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:1rem">Flujo de prueba con BD</h3>
+          <div class="flow" style="flex-direction:column; align-items:flex-start; gap:0.5rem">
+            <div class="flow-step" style="width:100%">1. Crear BD SQLite temporal</div>
+            <div class="flow-arrow" style="margin-left:1rem">↓</div>
+            <div class="flow-step" style="width:100%">2. Inyectar con <code>dependency_overrides</code></div>
+            <div class="flow-arrow" style="margin-left:1rem">↓</div>
+            <div class="flow-step" style="width:100%">3. Ejecutar el test</div>
+            <div class="flow-arrow" style="margin-left:1rem">↓</div>
+            <div class="flow-step" style="width:100%">4. Limpiar con <code>drop_all</code></div>
+          </div>
+          <div class="highlight" style="margin-top:1rem">
+            <p><strong style="color:#c4b5fd">¿Por qué SQLite?</strong> Es liviano, sin servidor, y compatible con SQLAlchemy. Para producción usarás PostgreSQL, pero las pruebas deben ser rápidas y aisladas.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 13 — SECCIÓN E2E
+  ════════════════════════════════════════════ -->
+  <div class="slide section-slide">
+    <div class="slide-inner" style="text-align:center">
+      <div class="section-num">03</div>
+      <div class="tag red">Semana 14</div>
+      <h2>Pruebas End-to-End</h2>
+      <p style="margin-top:1rem; font-size:1.1rem; color:var(--text-muted)">
+        Simular el comportamiento real de un usuario en el navegador,<br>
+        desde la interfaz hasta la base de datos.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 14 — ¿QUÉ ES E2E?
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag red">E2E</div>
+      <h2>¿Qué prueba una prueba E2E?</h2>
+      <div class="flow" style="margin: 2rem 0; flex-wrap:nowrap">
+        <div class="flow-step" style="background:#052e16; border-color:var(--accent3)">
+          👤<br>Usuario
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          🌐<br>HTML/JS
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          🔗<br>API REST
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          🐍<br>FastAPI
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          🗄️<br>Base de Datos
+        </div>
+      </div>
+      <div class="three-col" style="margin-top:0.5rem">
+        <div class="card accent-green">
+          <div class="card-icon">✅</div>
+          <h3>Qué valida</h3>
+          <ul style="margin-top:0.5rem">
+            <li>Flujos completos de usuario</li>
+            <li>Integración frontend-backend</li>
+            <li>Navegación y formularios reales</li>
+            <li>Regresiones visibles</li>
+          </ul>
+        </div>
+        <div class="card accent-amber">
+          <div class="card-icon">⚡</div>
+          <h3>Herramientas</h3>
+          <ul style="margin-top:0.5rem">
+            <li><strong>Playwright</strong> — moderno, rápido</li>
+            <li>Selenium — clásico, amplio soporte</li>
+            <li>Cypress — JavaScript nativo</li>
+            <li>Puppeteer — Node.js, headless</li>
+          </ul>
+        </div>
+        <div class="card accent-red">
+          <div class="card-icon">⚠️</div>
+          <h3>Desventajas</h3>
+          <ul style="margin-top:0.5rem">
+            <li>Lentas (segundos por test)</li>
+            <li>Frágiles ante cambios de UI</li>
+            <li>Difíciles de depurar</li>
+            <li>Requieren entorno activo</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 15 — PLAYWRIGHT
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag red">Playwright</div>
+      <h2>Playwright con Python</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="cm"># Instalación</span>
+pip install playwright pytest-playwright
+playwright install chromium
+
+<span class="cm"># tests/e2e/test_flujo_items.py</span>
+<span class="kw">import</span> pytest
+<span class="kw">from</span> playwright.sync_api <span class="kw">import</span> Page, expect
+
+BASE = <span class="st">"http://localhost:8000"</span>
+
+<span class="de">@pytest.mark.e2e</span>
+<span class="kw">def</span> <span class="fn">test_crear_item_desde_ui</span>(page: <span class="ty">Page</span>):
+    <span class="cm"># Navegar al formulario</span>
+    page.<span class="fn">goto</span>(<span class="st">f"</span>{BASE}<span class="st">/static/index.html"</span>)
+
+    <span class="cm"># Llenar el formulario</span>
+    page.<span class="fn">fill</span>(<span class="st">"#nombre"</span>, <span class="st">"Mango"</span>)
+    page.<span class="fn">fill</span>(<span class="st">"#precio"</span>, <span class="st">"2.5"</span>)
+    page.<span class="fn">click</span>(<span class="st">"#btn-guardar"</span>)
+
+    <span class="cm"># Verificar resultado</span>
+    <span class="fn">expect</span>(page.<span class="fn">locator</span>(<span class="st">"#mensaje"</span>)).<span class="fn">to_contain_text</span>(
+        <span class="st">"Guardado exitosamente"</span>
+    )
+
+<span class="de">@pytest.mark.e2e</span>
+<span class="kw">def</span> <span class="fn">test_item_aparece_en_lista</span>(page: <span class="ty">Page</span>):
+    page.<span class="fn">goto</span>(<span class="st">f"</span>{BASE}<span class="st">/static/index.html"</span>)
+    item = page.<span class="fn">locator</span>(<span class="st">".item-card"</span>).<span class="fn">first</span>()
+    <span class="fn">expect</span>(item).<span class="fn">to_be_visible</span>()</code></pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:1rem">API de Playwright</h3>
+          <table>
+            <tr><th>Método</th><th>Para qué</th></tr>
+            <tr><td><code>page.goto(url)</code></td><td>Navegar a una URL</td></tr>
+            <tr><td><code>page.fill(sel, val)</code></td><td>Escribir en un input</td></tr>
+            <tr><td><code>page.click(sel)</code></td><td>Hacer clic</td></tr>
+            <tr><td><code>page.locator(sel)</code></td><td>Seleccionar elemento</td></tr>
+            <tr><td><code>expect(...).to_*</code></td><td>Assertions async</td></tr>
+            <tr><td><code>page.screenshot()</code></td><td>Capturar pantalla</td></tr>
+          </table>
+          <pre style="margin-top:1rem"><code><span class="cm"># Ejecutar solo E2E</span>
+pytest -m e2e -v
+
+<span class="cm"># Ver el navegador (headful)</span>
+pytest -m e2e --headed</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE — SECCIÓN CALIDAD Y CARGA (S15)
+  ════════════════════════════════════════════ -->
+  <div class="slide section-slide">
+    <div class="slide-inner" style="text-align:center">
+      <div class="section-num">04</div>
+      <div class="tag amber">Semana 15</div>
+      <h2>Calidad y Pruebas de Carga</h2>
+      <p style="margin-top:1rem; font-size:1.1rem; color:var(--text-muted)">
+        Medir el rendimiento del sistema bajo condiciones reales y verificar<br>
+        que cumple los estándares de calidad definidos.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE — ISO 25010
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag amber">ISO/IEC 25010</div>
+      <h2>Modelo de Calidad del Software</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <div class="three-col" style="gap:0.75rem">
+            <div class="card" style="border-top:3px solid #7c3aed; padding:1rem">
+              <div style="font-size:1.4rem">⚙️</div>
+              <h3 style="font-size:0.85rem">Adecuación funcional</h3>
+            </div>
+            <div class="card" style="border-top:3px solid #06b6d4; padding:1rem">
+              <div style="font-size:1.4rem">⚡</div>
+              <h3 style="font-size:0.85rem; color:var(--accent2)">Eficiencia de rendimiento</h3>
+            </div>
+            <div class="card" style="border-top:3px solid #10b981; padding:1rem">
+              <div style="font-size:1.4rem">🔧</div>
+              <h3 style="font-size:0.85rem">Mantenibilidad</h3>
+            </div>
+            <div class="card" style="border-top:3px solid #f59e0b; padding:1rem">
+              <div style="font-size:1.4rem">🔒</div>
+              <h3 style="font-size:0.85rem">Seguridad</h3>
+            </div>
+            <div class="card" style="border-top:3px solid #8b5cf6; padding:1rem">
+              <div style="font-size:1.4rem">😊</div>
+              <h3 style="font-size:0.85rem">Usabilidad</h3>
+            </div>
+            <div class="card" style="border-top:3px solid #ec4899; padding:1rem">
+              <div style="font-size:1.4rem">💪</div>
+              <h3 style="font-size:0.85rem">Confiabilidad</h3>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="tag cyan">Foco del lab</div>
+          <h3 style="margin-bottom:1rem">Eficiencia de Rendimiento</h3>
+          <p style="margin-bottom:1rem">La capacidad del sistema de responder en tiempos aceptables bajo carga de trabajo real o extrema.</p>
+          <table>
+            <tr><th>Sub-característica</th><th>¿Qué mide?</th></tr>
+            <tr><td>Tiempo de respuesta</td><td>Latencia por petición</td></tr>
+            <tr><td>Throughput</td><td>Peticiones por segundo (RPS)</td></tr>
+            <tr><td>Utilización de recursos</td><td>CPU, RAM, conexiones de BD</td></tr>
+          </table>
+          <div class="highlight" style="margin-top:1rem">
+            <p>ISO 25010 define <em>qué</em> medir. K6 es la herramienta que ejecuta esa medición contra tu API FastAPI.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE — TIPOS DE PRUEBA DE RENDIMIENTO
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag amber">Rendimiento</div>
+      <h2>Tipos de pruebas de rendimiento</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <div class="card accent-cyan" style="margin-bottom:1rem">
+            <div class="card-icon">📈</div>
+            <h3>Carga (Load Test)</h3>
+            <p>Simula el volumen de usuarios esperado en condiciones normales. ¿Rinde bien en el día a día?</p>
+            <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--accent2)">Ej: 100 usuarios simultáneos durante 5 min</p>
+          </div>
+          <div class="card accent-red">
+            <div class="card-icon">💥</div>
+            <h3>Estrés (Stress Test)</h3>
+            <p>Supera la capacidad máxima para encontrar el punto de quiebre del sistema.</p>
+            <p style="margin-top:0.5rem; font-size:0.85rem; color:#fca5a5">Ej: incrementar hasta 1000 VUs y más</p>
+          </div>
+        </div>
+        <div>
+          <div class="card accent-amber" style="margin-bottom:1rem">
+            <div class="card-icon">⚡</div>
+            <h3>Picos (Spike Test)</h3>
+            <p>Aumentos repentinos y drásticos de tráfico. ¿El sistema se recupera después del pico?</p>
+            <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--accent4)">Ej: 0 → 500 usuarios en 10 segundos</p>
+          </div>
+          <div class="card accent-purple">
+            <div class="card-icon">⏱️</div>
+            <h3>Resistencia (Soak Test)</h3>
+            <p>Carga sostenida durante horas para detectar fugas de memoria o degradación gradual.</p>
+            <p style="margin-top:0.5rem; font-size:0.85rem; color:#c084fc">Ej: 50 usuarios durante 2 horas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE — K6 BÁSICO
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag cyan">K6</div>
+      <h2>K6: pruebas de carga modernas</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="cm"># Instalar K6 (Linux/snap)</span>
+sudo snap install k6
+
+<span class="cm"># lab-04/scripts/carga_basica.js</span>
+<span class="kw">import</span> http <span class="kw">from</span> <span class="st">'k6/http'</span>;
+<span class="kw">import</span> { sleep, check } <span class="kw">from</span> <span class="st">'k6'</span>;
+
+<span class="kw">export const</span> options = {
+  vus:      <span class="num">50</span>,      <span class="cm">// usuarios virtuales</span>
+  duration: <span class="st">'30s'</span>,  <span class="cm">// duración</span>
+};
+
+<span class="kw">export default function</span> () {
+  <span class="kw">const</span> res = http.<span class="fn">get</span>(<span class="st">'http://localhost:8000/items/'</span>);
+
+  <span class="fn">check</span>(res, {
+    <span class="st">'status 200'</span>:      r =&gt; r.status === <span class="num">200</span>,
+    <span class="st">'tiempo &lt; 500ms'</span>:  r =&gt; r.timings.duration &lt; <span class="num">500</span>,
+  });
+
+  <span class="fn">sleep</span>(<span class="num">1</span>); <span class="cm">// pausa entre peticiones</span>
+}
+
+<span class="cm"># Ejecutar</span>
+k6 run scripts/carga_basica.js</code></pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:1rem">¿Por qué K6 sobre JMeter?</h3>
+          <table style="margin-bottom:1rem">
+            <tr><th></th><th>K6</th><th>JMeter</th></tr>
+            <tr><td>Sintaxis</td><td style="color:var(--accent3)">JavaScript</td><td>XML / GUI</td></tr>
+            <tr><td>Interfaz</td><td style="color:var(--accent3)">CLI ligera</td><td>GUI pesada</td></tr>
+            <tr><td>CI/CD</td><td style="color:var(--accent3)">Nativo</td><td>Complejo</td></tr>
+            <tr><td>Curva</td><td style="color:var(--accent3)">Baja</td><td>Media-alta</td></tr>
+          </table>
+          <div class="card accent-cyan">
+            <h3>Salida típica</h3>
+            <pre style="margin-top:0.5rem; font-size:0.75rem; padding:0.6rem"><code><span class="st">✓ status 200</span>........... 100%
+<span class="st">✓ tiempo &lt; 500ms</span>........ 98.5%
+
+http_req_duration: avg=120ms p(95)=380ms
+http_reqs:         1500 total  (50 RPS)
+vus:               50   max=50</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE — K6 THRESHOLDS Y STAGES
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag cyan">K6 Avanzado</div>
+      <h2>Stages, thresholds y reporte</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code><span class="cm"># lab-04/scripts/carga_stages.js</span>
+<span class="kw">export const</span> options = {
+  stages: [
+    { duration: <span class="st">'30s'</span>, target: <span class="num">20</span>  }, <span class="cm">// rampa subida</span>
+    { duration: <span class="st">'1m'</span>,  target: <span class="num">100</span> }, <span class="cm">// carga sostenida</span>
+    { duration: <span class="st">'20s'</span>, target: <span class="num">0</span>   }, <span class="cm">// rampa bajada</span>
+  ],
+  thresholds: {
+    <span class="cm">// El test FALLA si se violan estos límites</span>
+    <span class="st">'http_req_duration'</span>: [<span class="st">'p(95)&lt;500'</span>],  <span class="cm">// 95% bajo 500ms</span>
+    <span class="st">'http_req_failed'</span>:   [<span class="st">'rate&lt;0.01'</span>],  <span class="cm">// menos del 1% errores</span>
+    <span class="st">'checks'</span>:            [<span class="st">'rate&gt;0.99'</span>],  <span class="cm">// +99% checks pasan</span>
+  },
+};
+
+<span class="kw">export default function</span> () {
+  <span class="kw">const</span> res = http.<span class="fn">get</span>(<span class="st">'http://localhost:8000/items/'</span>);
+  <span class="fn">check</span>(res, { <span class="st">'ok'</span>: r =&gt; r.status &lt; <span class="num">400</span> });
+  <span class="fn">sleep</span>(<span class="num">1</span>);
+}
+
+<span class="cm"># Generar reporte HTML</span>
+K6_WEB_DASHBOARD=true \
+K6_WEB_DASHBOARD_EXPORT=reporte.html \
+k6 run scripts/carga_stages.js</code></pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:1rem">Métricas clave</h3>
+          <table>
+            <tr><th>Métrica</th><th>¿Qué mide?</th></tr>
+            <tr><td><code>p(50)</code></td><td>Mediana de latencia (usuario típico)</td></tr>
+            <tr><td><code>p(95)</code></td><td>El 95% de usuarios bajo este tiempo</td></tr>
+            <tr><td><code>p(99)</code></td><td>Casos más lentos — cola larga</td></tr>
+            <tr><td><code>http_req_failed</code></td><td>Tasa de errores HTTP</td></tr>
+            <tr><td><code>http_reqs</code></td><td>Solicitudes por segundo (RPS)</td></tr>
+          </table>
+          <div class="highlight" style="margin-top:1rem">
+            <p><strong style="color:#c4b5fd">¿Por qué p(95) y no el promedio?</strong> El promedio oculta los picos. El p(95) garantiza que el 95% de usuarios tiene una experiencia aceptable.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 16 — ESTRUCTURA DEL PROYECTO
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag cyan">Organización</div>
+      <h2>Estructura del laboratorio</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div>
+          <pre><code>semana-13-14-pruebas/
+│
+├── slides.html                  ← estas diapositivas
+│
+├── lab-01-pruebas-unitarias/
+│   ├── app/
+│   │   ├── calculadora.py       ← lógica de negocio
+│   │   └── usuario.py
+│   ├── tests/
+│   │   ├── conftest.py
+│   │   ├── test_calculadora.py
+│   │   └── test_usuario.py
+│   └── requirements.txt
+│
+├── lab-02-pruebas-integracion/
+│   ├── app/
+│   │   ├── main.py              ← FastAPI app
+│   │   ├── database.py
+│   │   └── models.py
+│   ├── tests/
+│   │   ├── conftest.py
+│   │   └── test_api_items.py
+│   └── requirements.txt
+│
+├── lab-03-e2e/
+│   ├── app/
+│   │   ├── main.py              ← FastAPI + static
+│   │   └── static/
+│   │       └── index.html       ← frontend HTML puro
+│   ├── tests/e2e/
+│   │   └── test_flujos.py       ← Playwright
+│   └── requirements.txt
+│
+└── lab-04-pruebas-carga/
+    ├── app/
+    │   └── main.py              ← FastAPI bajo prueba
+    ├── scripts/
+    │   ├── carga_basica.js      ← K6 básico
+    │   └── carga_stages.js      ← stages y thresholds
+    ├── reportes/                ← reportes HTML generados
+    └── requirements.txt</code></pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:1rem">Progresión de los labs</h3>
+          <div class="timeline">
+            <div class="tl-item">
+              <div>
+                <div class="tl-dot" style="background:var(--accent3); border-color:var(--accent3)"></div>
+              </div>
+              <div>
+                <div style="font-weight:600; color:var(--accent3)">Lab 01 — Unitarias</div>
+                <p style="font-size:0.9rem">Funciones puras, fixtures, mocking de dependencias. Sin servidor, sin BD.</p>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div>
+                <div class="tl-dot" style="background:var(--accent4); border-color:var(--accent4)"></div>
+              </div>
+              <div>
+                <div style="font-weight:600; color:var(--accent4)">Lab 02 — Integración</div>
+                <p style="font-size:0.9rem">TestClient de FastAPI, SQLite en memoria, flujos CRUD completos.</p>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div>
+                <div class="tl-dot" style="background:var(--danger); border-color:var(--danger)"></div>
+              </div>
+              <div>
+                <div style="font-weight:600; color:var(--danger)">Lab 03 — E2E</div>
+                <p style="font-size:0.9rem">Playwright sobre HTML puro + FastAPI. Simula al usuario real en el navegador.</p>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div>
+                <div class="tl-dot" style="background:var(--accent2); border-color:var(--accent2)"></div>
+              </div>
+              <div>
+                <div style="font-weight:600; color:var(--accent2)">Lab 04 — Carga</div>
+                <p style="font-size:0.9rem">K6 contra FastAPI: carga, estrés, stages y thresholds. Reporte HTML de rendimiento.</p>
+              </div>
+            </div>
+          </div>
+          <div class="highlight" style="margin-top:1.5rem">
+            <p>Cada lab tiene su propio <code>requirements.txt</code> y puede ejecutarse de forma independiente.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 17 — BUENAS PRÁCTICAS
+  ════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="tag purple">Buenas Prácticas</div>
+      <h2>Escribir pruebas de calidad</h2>
+      <div class="three-col" style="margin-top:1.5rem">
+        <div class="card accent-green">
+          <div class="card-icon">🎯</div>
+          <h3>Un assert por test</h3>
+          <p>Cada prueba debe fallar por una sola razón. Facilita identificar qué rompió.</p>
+        </div>
+        <div class="card accent-cyan">
+          <div class="card-icon">📛</div>
+          <h3>Nombres descriptivos</h3>
+          <p><code>test_crear_usuario_con_email_duplicado_retorna_409</code> es mejor que <code>test_1</code>.</p>
+        </div>
+        <div class="card accent-purple">
+          <div class="card-icon">🔒</div>
+          <h3>Tests independientes</h3>
+          <p>Ningún test debe depender del estado que dejó otro. Usa fixtures para inicializar.</p>
+        </div>
+        <div class="card accent-amber">
+          <div class="card-icon">⚡</div>
+          <h3>Pruebas rápidas</h3>
+          <p>Las pruebas lentas no se ejecutan. Unitarias &lt; 100ms, integración &lt; 2s.</p>
+        </div>
+        <div class="card accent-red">
+          <div class="card-icon">🚫</div>
+          <h3>Sin lógica en tests</h3>
+          <p>Evita <code>if</code>, <code>for</code> en tests. Si los necesitas, extrae una función auxiliar.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid var(--text-muted)">
+          <div class="card-icon">🔄</div>
+          <h3>Tests antes del fix</h3>
+          <p>Ante un bug, primero escribe el test que lo reproduce, luego corrígelo (TDD reactivo).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 18 — ENTREGABLES
+  ════════════════════════════════════════════ -->
+  <div class="slide lab-slide">
+    <div class="slide-inner">
+      <div class="tag green">Laboratorio</div>
+      <h2>Lo que construiremos</h2>
+      <div class="two-col" style="margin-top:1.5rem">
+        <div class="card accent-green">
+          <div class="card-icon">🧪</div>
+          <h3>Lab 01 · Unitarias</h3>
+          <ul style="margin-top:0.5rem" class="checklist">
+            <li>Funciones de lógica de negocio</li>
+            <li>Pruebas con pytest</li>
+            <li>Fixtures y conftest.py</li>
+            <li>Mock de dependencias</li>
+            <li>Reporte de cobertura</li>
+          </ul>
+        </div>
+        <div class="card accent-amber">
+          <div class="card-icon">🔗</div>
+          <h3>Lab 02 · Integración</h3>
+          <ul style="margin-top:0.5rem" class="checklist">
+            <li>API FastAPI con SQLAlchemy</li>
+            <li>CRUD completo de items</li>
+            <li>TestClient en cada endpoint</li>
+            <li>BD SQLite por test</li>
+            <li>Casos de error (404, 422)</li>
+          </ul>
+        </div>
+        <div class="card accent-red">
+          <div class="card-icon">🎭</div>
+          <h3>Lab 03 · E2E</h3>
+          <ul style="margin-top:0.5rem" class="checklist">
+            <li>Frontend en HTML + Fetch API</li>
+            <li>Playwright con Python</li>
+            <li>Flujo: crear → listar → eliminar</li>
+            <li>Screenshots en fallo</li>
+            <li>Modo headless y headful</li>
+          </ul>
+        </div>
+        <div class="card accent-cyan">
+          <div class="card-icon">🔥</div>
+          <h3>Lab 04 · Carga</h3>
+          <ul style="margin-top:0.5rem" class="checklist">
+            <li>FastAPI bajo carga con K6</li>
+            <li>Pruebas de carga y estrés</li>
+            <li>Stages con rampa progresiva</li>
+            <li>Thresholds como criterios de aceptación</li>
+            <li>Reporte HTML de rendimiento</li>
+          </ul>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top:1.5rem">
+        <p>
+          <strong style="color:#c4b5fd">Herramientas necesarias:</strong>
+          Python 3.10+, pip, pytest, httpx, fastapi, sqlalchemy, playwright
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SLIDE 19 — CIERRE
+  ════════════════════════════════════════════ -->
+  <div class="slide title-slide">
+    <div class="slide-inner" style="text-align:center">
+      <div class="tag purple">Resumen</div>
+      <h1 style="font-size:2.5rem">Las pruebas no son opcionales,<br>son ingeniería.</h1>
+      <p class="hero-sub" style="margin:1.5rem auto">
+        Las pruebas unitarias son la red de seguridad.<br>
+        Las de integración son la confianza en el sistema.<br>
+        Las E2E son la perspectiva del usuario.<br>
+        Las de carga son la garantía de que aguanta en producción.
+      </p>
+      <div style="margin-top:2rem; display:flex; gap:1.5rem; justify-content:center; flex-wrap:wrap">
+        <div class="badge" style="background:#052e16; border-color:var(--accent3); color:var(--accent3)">→ Lab 01: Unitarias</div>
+        <div class="badge" style="background:#3d1d00; border-color:var(--accent4); color:var(--accent4)">→ Lab 02: Integración</div>
+        <div class="badge" style="background:#3b0a0a; border-color:var(--danger); color:#fca5a5">→ Lab 03: E2E</div>
+        <div class="badge" style="background:#0a2040; border-color:var(--accent2); color:#67e8f9">→ Lab 04: Carga K6</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- ── NAVEGACIÓN ── -->
+<div id="nav">
+  <button id="btn-prev" title="Anterior (←)">&#8592;</button>
+  <span id="slide-counter">1 / 19</span>
+  <button id="btn-next" title="Siguiente (→)">&#8594;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+  let   current = 0;
+
+  const counter  = document.getElementById('slide-counter');
+  const progress = document.getElementById('progress');
+  const btnPrev  = document.getElementById('btn-prev');
+  const btnNext  = document.getElementById('btn-next');
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current].classList.remove('exit'), 400);
+
+    current = Math.max(0, Math.min(n, total - 1));
+
+    slides[current].classList.add('active');
+    counter.textContent  = `${current + 1} / ${total}`;
+    progress.style.width = `${((current + 1) / total) * 100}%`;
+    btnPrev.disabled     = current === 0;
+    btnNext.disabled     = current === total - 1;
+  }
+
+  btnNext.addEventListener('click', () => goTo(current + 1));
+  btnPrev.addEventListener('click', () => goTo(current - 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') goTo(current + 1);
+    if (e.key === 'ArrowLeft')                    goTo(current - 1);
+    if (e.key === 'Home')                         goTo(0);
+    if (e.key === 'End')                          goTo(total - 1);
+  });
+
+  // Quiz interactivo (slide de buenas prácticas no lo tiene, pero dejo la lógica)
+  document.querySelectorAll('.quiz-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const parent = opt.closest('.slide-inner');
+      parent.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('correct', 'wrong'));
+      opt.classList.add(opt.dataset.correct === 'true' ? 'correct' : 'wrong');
+    });
+  });
+
+  goTo(0);
+</script>
+</body>
+</html>

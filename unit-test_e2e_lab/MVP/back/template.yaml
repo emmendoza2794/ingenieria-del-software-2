@@ -1,0 +1,40 @@
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 600
+    MemorySize: 512
+    Runtime: python3.12
+    Environment:
+      Variables:
+        TZ: "America/Bogota"
+
+Resources:
+  MvpBaseFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'mvp-base-backend'
+      Handler: lambda_handler.handler
+      Runtime: python3.12
+      Timeout: 600
+      MemorySize: 512
+      Environment:
+        Variables:
+          # Database Configuration
+          DATABASE_URL: 'postgresql://user:password@host:5432/dbname'
+
+          # Application Settings
+          DEBUG: 'False'
+          JWT_SECRET_KEY: 'change-this-secret-key'
+
+      Events:
+        Api:
+          Type: HttpApi
+
+Outputs:
+  MvpBaseApi:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  MvpBaseFunction:
+    Description: "MVP Base Lambda Function ARN"
+    Value: !GetAtt MvpBaseFunction.Arn
