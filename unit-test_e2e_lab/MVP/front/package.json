@@ -8,7 +8,10 @@
     "dev": "nuxt dev",
     "preview": "wrangler dev .output/server/index.mjs --assets .output/public",
     "postinstall": "nuxt prepare",
-    "deploy": "npm run build && wrangler deploy .output/server/index.mjs --assets .output/public"
+    "deploy": "npm run build && wrangler deploy .output/server/index.mjs --assets .output/public",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed"
   },
   "keywords": [],
   "author": "",
@@ -28,5 +31,8 @@
     "primevue": "^4.5.4",
     "tailwindcss": "^4.2.2",
     "tailwindcss-primeui": "^0.6.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }

@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
 
     # Database Configuration
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/mvp_base"
+    DATABASE_URL: str = "sqlite:///./app.db"
 
     # Application Settings
     DEBUG: bool = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")

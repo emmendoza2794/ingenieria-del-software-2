@@ -7,10 +7,14 @@ import logging
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# Create database engine
-engine = create_engine(
-    settings.DATABASE_URL, pool_pre_ping=True, echo=False
-)
+# SQLite requiere check_same_thread=False para funcionar con FastAPI
+_engine_kwargs: dict = {"echo": False}
+if settings.DATABASE_URL.startswith("sqlite"):
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    _engine_kwargs["pool_pre_ping"] = True
+
+engine = create_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

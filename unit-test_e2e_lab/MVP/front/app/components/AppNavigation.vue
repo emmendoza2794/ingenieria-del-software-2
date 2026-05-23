@@ -251,8 +251,7 @@ const utilitiesItems = [
 ]
 
 const exampleItems = [
-  { to: '/login-1', label: 'Login 1 (Card)', icon: 'icon-[ic--twotone-login]' },
-  { to: '/login-2', label: 'Login 2 (Split)', icon: 'icon-[ic--twotone-login]' },
+  { to: '/login', label: 'Login', icon: 'icon-[ic--twotone-login]' },
 ]
 
 const configItems = [

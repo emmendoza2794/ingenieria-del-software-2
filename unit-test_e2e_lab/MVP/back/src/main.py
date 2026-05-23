@@ -1,6 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from src.core.limiter import limiter
 import logging
+from pathlib import Path
 
 from src.core.config import settings
 from src.core.database import engine, Base, check_database_connection
@@ -32,6 +37,8 @@ app = FastAPI(
     description="API base para proyectos MVP",
     debug=settings.DEBUG
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configuración CORS
 app.add_middleware(
@@ -44,6 +51,11 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
+
+# Servir formulario HTML estático
+_static_dir = Path(__file__).parent / "static"
+_static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
 @app.get("/")

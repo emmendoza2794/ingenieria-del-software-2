@@ -1,15 +1,18 @@
-from fastapi import APIRouter, Depends, status, Form
+from fastapi import APIRouter, Depends, Request, status, Form
 from sqlalchemy.orm import Session
 from ..core.database import get_db
 from ..core.auth import get_current_user
 from ..services.auth import AuthService
 from ..schemas.auth import UserLogin, UserRegister, Token, UserResponse
+from src.core.limiter import limiter
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 def register(
+    request: Request,
     email: str = Form(..., description="Valid email address"),
     password: str = Form(..., description="User password (will be hashed)"),
     name: str = Form(..., description="User's full name"),
@@ -30,6 +33,7 @@ def register(
 
 @router.post("/login", response_model=Token)
 def login(
+    request: Request,
     email: str = Form(..., description="User's email"),
     password: str = Form(..., description="User's password"),
     db: Session = Depends(get_db)
