@@ -1,6 +1,6 @@
 # Testing — MVP Back (FastAPI)
 
-Suite de pruebas del backend. Cubre tres niveles de la pirámide de testing: **unitarias**, **integración** y —a nivel de setup— el contrato que consumen los tests E2E del front.
+Suite de pruebas del backend. Cubre cuatro niveles: **unitarias**, **integración**, **E2E** (en el front) y **carga** (K6).
 
 ---
 
@@ -18,7 +18,22 @@ source .venv/bin/activate   # Linux / macOS
 Paquetes de testing relevantes instalados por poetry:
 - `pytest` + `pytest-cov` — runner y cobertura
 - `freezegun` — congelar el tiempo en tests de JWT
-- `pytest-playwright` — requerido solo si se corren tests de E2E desde el back (actualmente los E2E están en el front)
+- `pytest-playwright` — no se usa directamente (los E2E están en el front)
+
+Para los tests de carga se necesita **k6** instalado por separado:
+
+```bash
+# Linux — instalación oficial
+sudo gpg -k
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+     --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+     | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update && sudo apt-get install k6
+
+# Verificar instalación
+k6 version
+```
 
 ---
 
@@ -32,9 +47,14 @@ back/
 │   ├── unit/
 │   │   ├── test_password.py     ← 8 tests — hash y verificación de contraseñas
 │   │   └── test_jwt.py          ← 9 tests — creación y decodificación de tokens
-│   └── integration/
-│       ├── conftest.py          ← fixtures: DB en memoria, cliente HTTP, reset de rate limiter
-│       └── test_auth.py         ← 21 tests — endpoints POST /auth/register, POST /auth/login, GET /auth/me
+│   ├── integration/
+│   │   ├── conftest.py          ← fixtures: DB en memoria, cliente HTTP, reset de rate limiter
+│   │   └── test_auth.py         ← 21 tests — endpoints POST /auth/register, POST /auth/login, GET /auth/me
+│   └── load/
+│       ├── utils.js             ← helpers compartidos (BASE_URL, setupUser, getToken, authHeader)
+│       ├── smoke.js             ← 1 VU, 30 s — sanity check mínimo
+│       ├── load.js              ← 10 VUs sostenidos — carga normal de producción
+│       └── stress.js            ← hasta 70 VUs — punto de quiebre del sistema
 ```
 
 ---
@@ -208,6 +228,91 @@ Si quieres empezar desde cero (se pierden todos los usuarios registrados):
 rm app.db
 # El back la recrea automáticamente al reiniciar
 ```
+
+---
+
+## Pruebas de carga (K6)
+
+Los tests de carga usan **k6** y se encuentran en `tests/load/`. Requieren que el back esté corriendo (`poetry run uvicorn src.main:app --reload`).
+
+### Comandos
+
+#### Smoke test — verificación mínima
+
+```bash
+# Desde MVP/back/
+k6 run tests/load/smoke.js
+```
+
+- **1 VU, 30 s**
+- Si falla aquí, algo básico está roto (salud, login, token).
+- Umbral: 0 errores HTTP, p(95) < 500 ms.
+
+#### Load test — carga normal de producción
+
+```bash
+k6 run tests/load/load.js
+```
+
+Con reporte JSON para análisis posterior:
+
+```bash
+mkdir -p results
+k6 run tests/load/load.js --out json=results/load.json
+```
+
+- **Etapas**: ramp-up 0→10 VUs (30 s) → 10 VUs sostenidos (90 s) → ramp-down (30 s).
+- **Métricas ISO/IEC 25010** — eficiencia de desempeño:
+  - Comportamiento temporal: p(95) < 800 ms
+  - Utilización de recursos: tasa de error < 2 %
+- Métricas personalizadas: `login_duration` (Trend), `login_errors` (Rate), `total_logins` (Counter).
+
+#### Stress test — punto de quiebre
+
+```bash
+k6 run tests/load/stress.js
+```
+
+- **Etapas progresivas** (30 s cada una):
+
+  | Etapa | VUs | Propósito |
+  |-------|-----|-----------|
+  | 1 | 5 | Línea base |
+  | 2 | 15 | Carga media |
+  | 3 | 30 | Carga alta |
+  | 4 | 50 | Estrés |
+  | 5 | 70 | Sobrecarga |
+  | 6 | 0 | Recuperación |
+
+- Umbrales más holgados: < 10 % de errores, p(95) < 2 s.
+- Observar en qué etapa la latencia supera 1 s y si el sistema se recupera al bajar la carga.
+
+### Cómo interpretar los resultados
+
+Al finalizar cada test, k6 muestra un resumen con:
+
+```
+✓ login: status 200
+✓ me: status 200
+
+checks.........................: 100.00% ✓ 300 ✗ 0
+http_req_duration..............: avg=45ms  p(95)=120ms
+http_req_failed................: 0.00%
+login_duration.................: avg=40ms  p(95)=110ms
+```
+
+- `✓` junto a un threshold = dentro del límite aceptable.
+- `✗` junto a un threshold = superado → degradación o error en el sistema.
+- `p(95)` = el 95 % de las requests tardó menos de ese tiempo; el 5 % más lento queda fuera.
+
+### Flujo que ejercitan los tests
+
+Todos los scripts siguen el mismo patrón:
+
+1. **`setup()`** — registra el usuario de prueba una sola vez (ignora 400 si ya existe).
+2. **Iteración por VU** — hace login → obtiene token → llama `GET /auth/me`.
+3. El smoke test además llama `GET /health`.
+4. El load test incluye `GET /health` aleatoriamente (1 de cada 5 iteraciones).
 
 ---
 
