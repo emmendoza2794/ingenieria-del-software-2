@@ -49,6 +49,7 @@
 import { useToast } from 'primevue/usetoast'
 
 const toast = useToast()
+const authStore = useAuthStore()
 const userMenu = ref()
 
 const toggleUserMenu = (event: Event) => {
@@ -77,7 +78,8 @@ const userMenuItems = ref([
     label: 'Cerrar Sesión',
     icon: 'pi pi-sign-out',
     command: () => {
-      toast.add({ severity: 'warn', summary: 'Sesión', detail: 'Cerrando sesión...', life: 2000 })
+      authStore.logout()
+      navigateTo('/login')
     }
   }
 ])

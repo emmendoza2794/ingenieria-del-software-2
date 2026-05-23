@@ -38,6 +38,7 @@ export async function goToLogin(page) {
 export async function goToRegister(page) {
   await page.goto('/login', { waitUntil: 'load' })
   await waitForHydration(page)
+  await page.waitForSelector('#tab-register', { state: 'visible' })
   await page.click('#tab-register')
   await page.waitForSelector('#form-register', { state: 'visible' })
 }

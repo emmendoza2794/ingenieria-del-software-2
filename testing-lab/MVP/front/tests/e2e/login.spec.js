@@ -21,13 +21,13 @@ test('muestra el formulario de login', async ({ page }) => {
   await expect(page.locator('#btn-login')).toBeVisible()
 })
 
-test('login exitoso redirige a /', async ({ page }) => {
+test('login exitoso redirige a /demo', async ({ page }) => {
   await goToLogin(page)
   await page.fill('#login-email', testUser.email)
   await page.fill('#login-password', testUser.password)
   await page.click('#btn-login')
-  await page.waitForURL('http://localhost:3000/', { timeout: 8000 })
-  expect(page.url()).toBe('http://localhost:3000/')
+  await page.waitForURL('http://localhost:3000/demo', { timeout: 8000 })
+  expect(page.url()).toBe('http://localhost:3000/demo')
 })
 
 test('login fallido muestra mensaje de error', async ({ page }) => {

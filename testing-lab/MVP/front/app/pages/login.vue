@@ -343,7 +343,7 @@ const handleLogin = async () => {
 
     authStore.setToken(res.access_token)
     toast.add({ severity: 'success', summary: 'Bienvenido', detail: 'Sesión iniciada correctamente', life: 2000 })
-    navigateTo('/')
+    navigateTo('/demo')
   } catch (err: any) {
     loginServerError.value = err?.data?.detail || 'Error al iniciar sesión'
   } finally {
